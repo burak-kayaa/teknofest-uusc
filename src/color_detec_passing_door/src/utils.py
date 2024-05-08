@@ -1,6 +1,20 @@
 import cv2
 import numpy as np
 
+w_center = 640
+h_center = 480
+center_x1 = 310
+center_x2 = 330
+center_y1 = 230
+center_y2 = 250
+
+def is_in_center(x, y):
+    if x < center_x2 and x > center_x1:
+        if y < center_y2 and y > center_y1:
+            return True
+    # if (x < 640 and )
+    return False
+
 def create_mask(color_name, hsv):  #'create_mask' fonksiyonu 2 adet parametre aliyor ve 1 tane cikti veriyor
     if color_name == "blue":
         lowwer_color = np.array([94, 80, 2])
@@ -34,12 +48,13 @@ def detect_shape(cnt,frame):
         x, y, w, h = cv2.boundingRect(cnt)
         x_center = int(x + (w / 2))  # X merkezini buluyoruz
         y_center = int(y + (h / 2))  # Y merkezini buluyoruz
-        # cv2.circle(frame,(x_center,y_center),3,(0,0,255),-1) # merkezine bir nokta koyuyoruz
+        cv2.circle(frame,(x_center,y_center),3,(0,0,255),-1) # merkezine bir nokta koyuyoruz
         # cv2.line(frame,(int(width/2),int(height/2)),(x_center,y_center),(0,0,0),2)  #goruntunun merkezinden nesnenin merkezine cizgi ciziyoruz
+        cv2.rectangle(frame, (center_x1, center_y1), (center_x2, center_y2), (255, 0, 0), 2)
         print(len(approx))  # len(approx) sayesinde kose sayisi aliyoruz ve ona gore sekli algiliyoruz
-        if len(approx) == 3:
-            cv2.putText( frame, "Ucgen", (x_center, y_center), cv2.FONT_HERSHEY_COMPLEX, 2, (0), 2)
-        if len(approx) == 4:
-            cv2.putText( frame, "Dortgen", (x_center, y_center), cv2.FONT_HERSHEY_COMPLEX, 2, (0), 2)
-        if len(approx) > 7:
-            cv2.putText( frame, "Cember", (x_center, y_center), cv2.FONT_HERSHEY_COMPLEX, 2, (0), 2)
+        if (cv2.contourArea(cnt) > 1200): 
+            if len(approx) > 7:
+                if (is_in_center(x_center, y_center)):
+                    cv2.putText( frame, "Ates", (x_center, y_center), cv2.FONT_HERSHEY_COMPLEX, 2, (0), 2)
+                else:
+                    cv2.putText( frame, "Hedef", (x_center, y_center), cv2.FONT_HERSHEY_COMPLEX, 2, (0), 2)
