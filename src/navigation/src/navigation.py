@@ -26,7 +26,7 @@ def dondurme(yon,derece):
 def belirli_sure_git(sure):
     onceki_zaman = time.time()
     simdiki_zaman = time.time()
-    while(simdiki_zaman-onceki_zaman>sure):
+    while(simdiki_zaman-onceki_zaman<sure):
         move.go()
 
 # ARACIN HAVUZA GÖRE KENDİ DÜZLEMESİ

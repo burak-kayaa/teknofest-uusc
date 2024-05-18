@@ -58,37 +58,78 @@ def dondurme(yon,derece):
 def belirli_sure_git(sure):
     onceki_zaman = time.time()
     simdiki_zaman = time.time()
-    while(simdiki_zaman-onceki_zaman>sure):
+    while(simdiki_zaman-onceki_zaman<sure): #ZAMANA KÜÇÜK OLUCAK
         move.go()
 
-# ARACIN HAVUZA GÖRE KENDİ DÜZLEMESİ
-if(pusula_veri>duz_yon):
-    while pusula_veri>=duz_yon:
-        pusula_veri = sensor.pusula()
-        move.turn_left()   
+# # ARACIN HAVUZA GÖRE KENDİ DÜZLEMESİ -> 1
+# if(pusula_veri>duz_yon):
+#     while pusula_veri>=duz_yon:
+#         pusula_veri = sensor.pusula()
+#         move.turn_left()   
 
-elif(pusula_veri<duz_yon):
-    while pusula_veri<=duz_yon:
-        pusula_veri = sensor.pusula()
-        move.turn_right()
-
-
-# ARACIN DUVARA HİZALAMASI
-dondurme(yon,90)
-yon = not(yon)
-
-# ARACIN KAMERAYA BAĞLI DUVARDAN UZAKLAŞMASI 
-if(yon == True):
-    while(sensor.sol_mesafe()<kamera_gorus_mesafesi_yan):
-        move.go_right()
-elif(yon != False):
-    while(sensor.sag_mesafe()<kamera_gorus_mesafesi_yan):
-        move.go_left()
+# elif(pusula_veri<duz_yon):
+#     while pusula_veri<=duz_yon:
+#         pusula_veri = sensor.pusula()
+#         move.turn_right()
 
 
-while tur_sayisi == 4:
-    # ÖN DUVARA KADAR İLERLEME
-    while(sensor.on_mesafe()>kamera_gorus_mesafesi_on):
+# # ARACIN DUVARA HİZALAMASI -> 2
+# dondurme(yon,90)
+# yon = not(yon)
+
+# # ARACIN KAMERAYA BAĞLI DUVARDAN UZAKLAŞMASI -> 3
+# if(yon == True):
+#     while(sensor.sol_mesafe()<kamera_gorus_mesafesi_yan):
+#         move.go_right()
+# elif(yon != False):
+#     while(sensor.sag_mesafe()<kamera_gorus_mesafesi_yan):
+#         move.go_left()
+
+while True:
+    # NAVİGASYON ALGORİTMASI 
+    while tur_sayisi < 4:
+        # ÖN DUVARA KADAR İLERLEME  -> 4
+        while(1):#BURAYA ON MESAFE BELİRLENEN MESAFEDEN UZAK OLDUĞU SÜRECE ÇALIŞTIR
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.flip(frame, 1)
+            hsvImage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            mask,mask2 = colors.create_mask(color_name,hsvImage)
+            contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            utils.draw_center(frame)
+            if contours:
+                for cnt in contours:
+                    area = cv2.contourArea(cnt)
+                    print(area)
+                    if(area>30000):
+                        hedef_bulundu = True
+                        break
+                if(hedef_bulundu):
+                    break
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            move.go()
+
+        # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ -> 5
+        if(hedef_bulundu==True):
+            break
+
+        # KISA DUVARI YANINA AL -> 6
+        dondurme(yon,90)
+
+        # BELİRLİ SÜRE İLERLEME -> 7
+        belirli_sure_git(5)
+
+        # KISA DUVARI ARKANA AL -> 8
+        dondurme(yon,90)
+        yon = not(yon)
+        tur_sayisi+=1
+
+
+    # GÜDÜM ALGORİTMASI 
+    while True:
         ret, frame = cap.read()
         if not ret:
             break
@@ -96,61 +137,37 @@ while tur_sayisi == 4:
         hsvImage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask,mask2 = colors.create_mask(color_name,hsvImage)
         contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        utils.draw_center(frame)
         if contours:
+            onceki_zaman = time.time()
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if(area>30000):
-                    hedef_bulundu = True
-                    break
-        move.go()
+                if(area>10000):                    
+                    largest_contour = max(contours, key=cv2.contourArea)
+                    x, y, w, h = cv2.boundingRect(largest_contour)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
+                    x_c, y_c = x + (w / 2), y + (h / 2)
+                    cv2.circle(frame, (int(x_c), int(y_c)), 5, (255, 255, 0), 2)
+                
+                    distance = utils.get_distance(w, real_distance)
+                    vertical_error = utils.get_error_range(h, real_distance)
+                    # move_vehicle(x, w, x_c, y_c, distance, vertical_error)
+        else:
+            # SÜRE NE KADARDIR YOK 
+            simdiki_zaman = time.time()
+            print("simdiki --------->"+str(simdiki_zaman))
+            print("onceki --------->"+str(onceki_zaman))
+            print("farki --------->"+str(simdiki_zaman-onceki_zaman))
+            if(simdiki_zaman-onceki_zaman>=4):
+                break
+                
 
-    # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ 
-    if(hedef_bulundu==True):
-        break
-
-    # KISA DUVARI YANINA AL
-    dondurme(yon,90)
-
-    # BELİRLİ SÜRE İLERLEME
-    belirli_sure_git(5)
-
-    # KISA DUVARI ARKANA AL
-    dondurme(yon,90)
-    yon = not(yon)
-    tur_sayisi+=1
-
-
-# GÜDÜM ALGORİTMASI 
-
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-    frame = cv2.flip(frame, 1)
-    hsvImage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask,mask2 = colors.create_mask(color_name,hsvImage)
-    contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    utils.draw_center(frame)
-    if contours:
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if(area>30000):
-                largest_contour = max(contours, key=cv2.contourArea)
-                x, y, w, h = cv2.boundingRect(largest_contour)
-                x_c, y_c = x + (w / 2), y + (h / 2)
-                cv2.circle(frame, (int(x_c), int(y_c)), 5, (255, 255, 0), 2)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
-                distance = utils.get_distance(w, real_distance)
-                print(distance)
-                vertical_error = utils.get_error_range(h, real_distance)
-                move_vehicle(x, w, x_c, y_c, distance, vertical_error)
-    else:
-        # SÜRE NE KADARDIR YOK 
-        pass
-        
-    cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+            
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    if 0xFF == ord('q'):
+            break
 
 cap.release()
 cv2.destroyAllWindows()
