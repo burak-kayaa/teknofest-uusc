@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
-import math
 import colors
 import time
 import utils
 import move
+# import serial
+# arduino = serial.Serial("/dev/ttyUSB0",timeout = 1)
 
 real_distance = 15
 cap = cv2.VideoCapture(0)
@@ -30,6 +31,7 @@ def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
             elif y_c < vertical_error - vertical_tolerance:
                 move.go_down()
             else:
+                # arduino.write(1)
                 print("at")
     print(time.localtime().tm_sec)
 
