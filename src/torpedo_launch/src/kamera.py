@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import math
 import colors
 import time
 import utils
@@ -30,7 +29,7 @@ def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
             elif y_c < vertical_error - vertical_tolerance:
                 move.go_down()
             else:
-                print("at")
+                print("fire")
     print(time.localtime().tm_sec)
 
 while True:
