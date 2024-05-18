@@ -9,7 +9,7 @@ import move
 
 real_distance = 15
 cap = cv2.VideoCapture(0)
-color_name = "blue"
+color_name = "ral"
 vertical_tolerance = 30
 horizontal_tolerance = 10
 distance_tolerance = 40
@@ -45,18 +45,15 @@ while True:
     contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     utils.draw_center(frame)
     if contours:
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if(area>30000):
-                largest_contour = max(contours, key=cv2.contourArea)
-                x, y, w, h = cv2.boundingRect(largest_contour)
-                x_c, y_c = x + (w / 2), y + (h / 2)
-                cv2.circle(frame, (int(x_c), int(y_c)), 5, (255, 255, 0), 2)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
-                distance = utils.get_distance(w, real_distance)
-                print(distance)
-                vertical_error = utils.get_error_range(h, real_distance)
-                move_vehicle(x, w, x_c, y_c, distance, vertical_error)
+        largest_contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest_contour)
+        x_c, y_c = x + (w / 2), y + (h / 2)
+        cv2.circle(frame, (int(x_c), int(y_c)), 5, (255, 255, 0), 2)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
+        distance = utils.get_distance(w, real_distance)
+        print(distance)
+        vertical_error = utils.get_error_range(h, real_distance)
+        move_vehicle(x, w, x_c, y_c, distance, vertical_error)
     else:
         print("cisim yok")
     cv2.imshow('frame', frame)

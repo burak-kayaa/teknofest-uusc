@@ -13,9 +13,3 @@ def go_up():
 def go_down():
     print("Going Down")
     pass
-def turn_left():
-    print("Turning left")
-    pass
-def turn_right():
-    print("Turning right")
-    pass
