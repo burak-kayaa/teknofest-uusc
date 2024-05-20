@@ -6,7 +6,7 @@ import colors
 import utils
 
 yon = True #True --> sol / False --> sağ
-pusula_veri = sensor.pusula()
+# pusula_veri = sensor.pusula()
 duz_yon = 180
 kamera_gorus_mesafesi_yan=100
 kamera_gorus_mesafesi_on=200
@@ -18,6 +18,7 @@ real_distance = 15
 vertical_tolerance = 30
 horizontal_tolerance = 10
 distance_tolerance = 40
+algoritma_bitti = False
 
 
 
@@ -39,8 +40,7 @@ def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
                 move.go_down()
             else:
                 # arduino.write(1)
-                print("at")
-    print(time.localtime().tm_sec)
+                print("!!FIRE!!")
 
 
 def dondurme(yon,derece):
@@ -85,7 +85,7 @@ def belirli_sure_git(sure):
 #     while(sensor.sag_mesafe()<kamera_gorus_mesafesi_yan):
 #         move.go_left()
 
-while True:
+while not(algoritma_bitti):
     # NAVİGASYON ALGORİTMASI 
     while tur_sayisi < 4:
         # ÖN DUVARA KADAR İLERLEME  -> 4
@@ -97,9 +97,16 @@ while True:
             hsvImage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             mask,mask2 = colors.create_mask(color_name,hsvImage)
             contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.putText(frame,"NAVIGASYON",(350,37),cv2.FONT_HERSHEY_COMPLEX_SMALL,2,(0,255,255),3)
             utils.draw_center(frame)
             if contours:
                 for cnt in contours:
+                    area  = cv2.contourArea(cnt)
+                    epsilon = 0.02*cv2.arcLength(cnt,True)
+                    approx = cv2.approxPolyDP(cnt,epsilon,True)
+                    x = approx.ravel()[0]
+                    y = approx.ravel()[1]
+                    cv2.drawContours(frame,[approx],0,(252,200,170),2)
                     area = cv2.contourArea(cnt)
                     print(area)
                     if(area>30000):
@@ -109,23 +116,27 @@ while True:
                     break
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                algoritma_bitti = True
                 break
             move.go()
 
         # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ -> 5
         if(hedef_bulundu==True):
+            hedef_bulundu==False
             break
 
-        # KISA DUVARI YANINA AL -> 6
-        dondurme(yon,90)
+        # # KISA DUVARI YANINA AL -> 6
+        # dondurme(yon,90)
 
-        # BELİRLİ SÜRE İLERLEME -> 7
-        belirli_sure_git(5)
+        # # BELİRLİ SÜRE İLERLEME -> 7
+        # belirli_sure_git(5)
 
-        # KISA DUVARI ARKANA AL -> 8
-        dondurme(yon,90)
-        yon = not(yon)
-        tur_sayisi+=1
+        # # KISA DUVARI ARKANA AL -> 8
+        # dondurme(yon,90)
+        # yon = not(yon)
+        # tur_sayisi+=1
+       
+        
 
 
     # GÜDÜM ALGORİTMASI 
@@ -136,14 +147,16 @@ while True:
         frame = cv2.flip(frame, 1)
         hsvImage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask,mask2 = colors.create_mask(color_name,hsvImage)
-        contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours2, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         utils.draw_center(frame)
-        if contours:
-            onceki_zaman = time.time()
-            for cnt in contours:
-                area = cv2.contourArea(cnt)
-                if(area>10000):                    
-                    largest_contour = max(contours, key=cv2.contourArea)
+        cv2.putText(frame,"GUDUM",(460,37),cv2.FONT_HERSHEY_COMPLEX_SMALL,2,(0,255,255),3)
+        if contours2:
+            for cnt2 in contours2:
+                area2 = cv2.contourArea(cnt2)
+                if(area2>10000):   
+                    onceki_zaman = time.time()
+                    simdiki_zaman = time.time()                 
+                    largest_contour = max(contours2, key=cv2.contourArea)
                     x, y, w, h = cv2.boundingRect(largest_contour)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
                     x_c, y_c = x + (w / 2), y + (h / 2)
@@ -151,23 +164,19 @@ while True:
                 
                     distance = utils.get_distance(w, real_distance)
                     vertical_error = utils.get_error_range(h, real_distance)
-                    # move_vehicle(x, w, x_c, y_c, distance, vertical_error)
+                    move_vehicle(x, w, x_c, y_c, distance, vertical_error)
         else:
             # SÜRE NE KADARDIR YOK 
             simdiki_zaman = time.time()
-            print("simdiki --------->"+str(simdiki_zaman))
-            print("onceki --------->"+str(onceki_zaman))
-            print("farki --------->"+str(simdiki_zaman-onceki_zaman))
+            print("GECEN ZAMAN --------->"+str(simdiki_zaman-onceki_zaman))
             if(simdiki_zaman-onceki_zaman>=4):
+                onceki_zaman = time.time()
                 break
-                
-
-            
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            algoritma_bitti = True
             break
-    if 0xFF == ord('q'):
-            break
+
 
 cap.release()
 cv2.destroyAllWindows()

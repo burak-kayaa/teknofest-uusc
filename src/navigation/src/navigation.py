@@ -54,7 +54,7 @@ elif(yon != False):
         move.go_left()
 
 
-while tur_sayisi == 4:
+while tur_sayisi < 4:
 
     # ÖN DUVARA KADAR İLERLEME
     while(sensor.on_mesafe()>kamera_gorus_mesafesi_on):
