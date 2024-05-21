@@ -20,6 +20,17 @@ horizontal_tolerance = 10
 distance_tolerance = 40
 
 
+x_mesafe = list()
+y_mesafe = list()
+aracin_hizi = 1
+x_sure_bas = 0
+x_sure_son = 0  
+
+
+toplam_x_mesafe = 0
+toplam_y_mesafe = 0
+
+
 gorev_algoritmasi = True
 dolum_algoritmasi = False
 
@@ -99,6 +110,7 @@ while gorev_algoritmasi:
     # NAVİGASYON ALGORİTMASI 
     while tur_sayisi < 4:
         # ÖN DUVARA KADAR İLERLEME  -> 4
+        x_sure_bas = time.time()
         while(1):#BURAYA ON MESAFE BELİRLENEN MESAFEDEN UZAK OLDUĞU SÜRECE ÇALIŞTIR
             ret, frame = cap.read()
             if not ret:
@@ -129,19 +141,29 @@ while gorev_algoritmasi:
                 gorev_algoritmasi = False
                 break
             move.go()
-
+        x_sure_son = time.time()
         # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ -> 5
         if(hedef_bulundu==True):
+            if(yon==True):
+                mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*1
+            else:
+                mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*-1
+            x_mesafe.append(mesafe)
             hedef_bulundu=False 
             gudum_algoritmasi=True
             break
 
         # # KISA DUVARI YANINA AL -> 6
+        if(yon==True):
+            mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*1
+        else:
+            mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*-1
+        x_mesafe.append(mesafe)
         # dondurme(yon,90)
 
         # # BELİRLİ SÜRE İLERLEME -> 7
         # belirli_sure_git(5)
-
+        y_mesafe.append(5*aracin_hizi)
         # # KISA DUVARI ARKANA AL -> 8
         # dondurme(yon,90)
         # yon = not(yon)
@@ -180,6 +202,10 @@ while gorev_algoritmasi:
                     if(move_vehicle(x, w, x_c, y_c, distance, vertical_error)):
                         gudum_algoritmasi=False
                         gorev_algoritmasi=False
+                        for i in x_mesafe:
+                            toplam_x_mesafe = toplam_x_mesafe + i
+                        for j in y_mesafe:
+                            toplam_y_mesafe = toplam_y_mesafe + j
                         dolum_algoritmasi=True
                 else:
                     gorulmedi = True
@@ -196,7 +222,10 @@ while gorev_algoritmasi:
             gorev_algoritmasi = False
             break
 while dolum_algoritmasi:
-    print("SELAMLAR")
+    print("SELAM")
+    print("X -----> " + str(toplam_x_mesafe))
+    print("Y -----> " + str(toplam_y_mesafe))
+    print("")
 
 cap.release()
 cv2.destroyAllWindows()
