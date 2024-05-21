@@ -18,8 +18,15 @@ real_distance = 15
 vertical_tolerance = 30
 horizontal_tolerance = 10
 distance_tolerance = 40
-algoritma_bitti = False
 
+
+gorev_algoritmasi = True
+dolum_algoritmasi = False
+
+gudum_algoritmasi = False
+navigasyon_algoritmasi = True
+
+gorulmedi = False
 
 
 def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
@@ -41,6 +48,9 @@ def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
             else:
                 # arduino.write(1)
                 print("!!FIRE!!")
+                dolum_algoritmasi=True
+                gorev_algoritmasi=False
+                return 1
 
 
 def dondurme(yon,derece):
@@ -85,7 +95,7 @@ def belirli_sure_git(sure):
 #     while(sensor.sag_mesafe()<kamera_gorus_mesafesi_yan):
 #         move.go_left()
 
-while not(algoritma_bitti):
+while gorev_algoritmasi:
     # NAVİGASYON ALGORİTMASI 
     while tur_sayisi < 4:
         # ÖN DUVARA KADAR İLERLEME  -> 4
@@ -108,21 +118,22 @@ while not(algoritma_bitti):
                     y = approx.ravel()[1]
                     cv2.drawContours(frame,[approx],0,(252,200,170),2)
                     area = cv2.contourArea(cnt)
-                    print(area)
                     if(area>30000):
                         hedef_bulundu = True
                         break
+                  
                 if(hedef_bulundu):
                     break
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                algoritma_bitti = True
+                gorev_algoritmasi = False
                 break
             move.go()
 
         # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ -> 5
         if(hedef_bulundu==True):
-            hedef_bulundu==False
+            hedef_bulundu=False 
+            gudum_algoritmasi=True
             break
 
         # # KISA DUVARI YANINA AL -> 6
@@ -140,7 +151,7 @@ while not(algoritma_bitti):
 
 
     # GÜDÜM ALGORİTMASI 
-    while True:
+    while gudum_algoritmasi:
         ret, frame = cap.read()
         if not ret:
             break
@@ -153,7 +164,10 @@ while not(algoritma_bitti):
         if contours2:
             for cnt2 in contours2:
                 area2 = cv2.contourArea(cnt2)
+                approx2 = cv2.approxPolyDP(cnt2,epsilon,True)
+                cv2.drawContours(frame,[approx2],0,(252,200,170),2)
                 if(area2>10000):   
+                    gorulmedi=False
                     onceki_zaman = time.time()
                     simdiki_zaman = time.time()                 
                     largest_contour = max(contours2, key=cv2.contourArea)
@@ -161,22 +175,28 @@ while not(algoritma_bitti):
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
                     x_c, y_c = x + (w / 2), y + (h / 2)
                     cv2.circle(frame, (int(x_c), int(y_c)), 5, (255, 255, 0), 2)
-                
                     distance = utils.get_distance(w, real_distance)
                     vertical_error = utils.get_error_range(h, real_distance)
-                    move_vehicle(x, w, x_c, y_c, distance, vertical_error)
-        else:
+                    if(move_vehicle(x, w, x_c, y_c, distance, vertical_error)):
+                        gudum_algoritmasi=False
+                        gorev_algoritmasi=False
+                        dolum_algoritmasi=True
+                else:
+                    gorulmedi = True
+        if(not(contours2) or gorulmedi):
             # SÜRE NE KADARDIR YOK 
             simdiki_zaman = time.time()
             print("GECEN ZAMAN --------->"+str(simdiki_zaman-onceki_zaman))
             if(simdiki_zaman-onceki_zaman>=4):
                 onceki_zaman = time.time()
+                gorulmedi=False
                 break
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            algoritma_bitti = True
+            gorev_algoritmasi = False
             break
-
+while dolum_algoritmasi:
+    print("SELAMLAR")
 
 cap.release()
 cv2.destroyAllWindows()
