@@ -23,8 +23,13 @@ distance_tolerance = 40
 x_mesafe = list()
 y_mesafe = list()
 aracin_hizi = 1
+
 x_sure_bas = 0
 x_sure_son = 0  
+
+y_sure_bas = 0
+y_sure_son = 0  
+
 
 
 toplam_x_mesafe = 0
@@ -38,7 +43,7 @@ gudum_algoritmasi = False
 navigasyon_algoritmasi = True
 
 gorulmedi = False
-
+dolum_yapildi = True
 
 def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
     cv2.line(frame,(0, int(vertical_error - 30)), (640,int(vertical_error - 30)), (255,255,0),3)
@@ -151,6 +156,8 @@ while gorev_algoritmasi:
             x_mesafe.append(mesafe)
             hedef_bulundu=False 
             gudum_algoritmasi=True
+            for i in x_mesafe:
+                toplam_x_mesafe = toplam_x_mesafe + i
             break
 
         # # KISA DUVARI YANINA AL -> 6
@@ -163,7 +170,8 @@ while gorev_algoritmasi:
 
         # # BELİRLİ SÜRE İLERLEME -> 7
         # belirli_sure_git(5)
-        y_mesafe.append(5*aracin_hizi)
+
+
         # # KISA DUVARI ARKANA AL -> 8
         # dondurme(yon,90)
         # yon = not(yon)
@@ -202,10 +210,6 @@ while gorev_algoritmasi:
                     if(move_vehicle(x, w, x_c, y_c, distance, vertical_error)):
                         gudum_algoritmasi=False
                         gorev_algoritmasi=False
-                        for i in x_mesafe:
-                            toplam_x_mesafe = toplam_x_mesafe + i
-                        for j in y_mesafe:
-                            toplam_y_mesafe = toplam_y_mesafe + j
                         dolum_algoritmasi=True
                 else:
                     gorulmedi = True
@@ -222,10 +226,32 @@ while gorev_algoritmasi:
             gorev_algoritmasi = False
             break
 while dolum_algoritmasi:
-    print("SELAM")
-    print("X -----> " + str(toplam_x_mesafe))
-    print("Y -----> " + str(toplam_y_mesafe))
-    print("")
+    while dolum_yapildi:
+        y_sure_bas = time.time()
+        # ARAÇ YAN DUVARA GELECEK
+        # if(yon == True):
+        #     while (sensor.sag()>30):
+        #         move.go_right()
+        # elif(yon == False):
+        #     while (sensor.sol()>30):
+        #         move.go_left()
+
+        time.sleep(1)
+        y_sure_son = time.time()
+        toplam_y_mesafe = ((y_sure_son-y_sure_bas)*aracin_hizi)
+        print("SELAM")
+        print("X -----> " + str(toplam_x_mesafe))
+        print("Y -----> " + str(toplam_y_mesafe))
+        print("")
+        break
+
+    # while hedefe_git:
+    #     baslangic_sure = time.time()
+    #     bitis_sure = time.time()
+    #     while((bitis_sure-baslangic_sure)<((toplam_x_mesafe)/aracin_hizi)):
+    #         bitis_sure = time.time()
+    #         move.go()
+      
 
 cap.release()
 cv2.destroyAllWindows()
