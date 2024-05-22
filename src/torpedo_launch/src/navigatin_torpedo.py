@@ -4,6 +4,7 @@ import time
 import sensor
 import colors
 import utils
+import pylint
 
 yon = True #True --> sol / False --> sağ
 ilk_yon = True
@@ -71,24 +72,34 @@ def move_vehicle(x, w, x_c, y_c, distance, vertical_error):
                 return 1
 
 
-def dondurme(yon,derece):
+def dondur(yon,belirlenen_derece,aciklama = "VERİLEN YÖNDE VERİLEN AÇI KADAR DÖNDÜRÜR"): 
     if(yon == True):
-        hedef  = pusula_veri - derece
-        while(pusula_veri > hedef):
+        hedef_derece  = pusula_veri - belirlenen_derece
+
+        if(hedef_derece<0): 
+            hedef_derece =+360
+
+        while(not((hedef_derece-5)< pusula_veri < (hedef_derece+5))):
             pusula_veri = sensor.pusula()
             move.turn_left()
-    elif(yon != False):
-        hedef  = pusula_veri + derece
-        while(pusula_veri < hedef):
+
+    elif(yon != False):           
+        hedef_derece  = pusula_veri + belirlenen_derece
+
+        if(hedef_derece>360):
+            hedef_derece =-360       
+        while(not((hedef_derece-5)< pusula_veri < (hedef_derece+5))):
             pusula_veri = sensor.pusula()
             move.turn_right()
 
-def belirli_sure_git(sure):
+
+def belirli_sure_git(sure,aciklama = "VERİLEN SÜREDE İLERİ GİDER"):
     onceki_zaman = time.time()
     simdiki_zaman = time.time()
     while(simdiki_zaman-onceki_zaman<sure): #ZAMANA KÜÇÜK OLUCAK
         simdiki_zaman = time.time()
         move.go()
+    return 0
 
 # # ARACIN HAVUZA GÖRE KENDİ DÜZLEMESİ -> 1
 # if(pusula_veri>duz_yon):
@@ -103,9 +114,10 @@ def belirli_sure_git(sure):
 
 
 # # ARACIN DUVARA HİZALAMASI -> 2
-# dondurme(yon,90)
+# dondur(yon,90)
+
+# # ARACIN KAMERAYA BAĞLI DUVARDAN UZAKLAŞMASI -> 3
 # if(hedefe_git == False):
-#     # ARACIN KAMERAYA BAĞLI DUVARDAN UZAKLAŞMASI -> 3
 #     if(yon == True):
 #         while(sensor.sol_mesafe()<kamera_gorus_mesafesi_yan):
 #             move.go_right()
@@ -113,16 +125,21 @@ def belirli_sure_git(sure):
 #         while(sensor.sag_mesafe()<kamera_gorus_mesafesi_yan):
 #             move.go_left()
 
-    # yon = not(yon)
+# yon = not(yon)
     
     
 while True:
+    # gorev_algoritmasi -> navigasyon_algoritmasi + gudum_algoritmasi
+    # dolum_algoritmasi -> dolum_yapildi + hedefe_git 
+
     while gorev_algoritmasi:
+
         # NAVİGASYON ALGORİTMASI 
         while navigasyon_algoritmasi:
-            # ÖN DUVARA KADAR İLERLEME  -> 4
-            x_sure_bas = time.time()
-            while(1):#BURAYA ON MESAFE BELİRLENEN MESAFEDEN UZAK OLDUĞU SÜRECE ÇALIŞTIR
+
+            x_sure_bas = time.time() #X DE GİTTİĞİ YOLU BULABİLMEK İÇİN SÜREYİ BAŞLATIYORUZ
+
+            while(1):#BURAYA ON MESAFE BELİRLENEN MESAFEDEN UZAK OLDUĞU SÜRECE ÇALIŞTIR (on_mesafe_sensor()>belirlenen_uzaklik)
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -134,25 +151,24 @@ while True:
                 utils.draw_center(frame)
                 if contours:
                     for cnt in contours:
-                        area  = cv2.contourArea(cnt)
-                        epsilon = 0.02*cv2.arcLength(cnt,True)
-                        approx = cv2.approxPolyDP(cnt,epsilon,True)
-                        x = approx.ravel()[0]
-                        y = approx.ravel()[1]
-                        cv2.drawContours(frame,[approx],0,(252,200,170),2)
+                        utils.draw_contours(frame,cnt)
                         area = cv2.contourArea(cnt)
-                        if(area>30000):
+
+                        if(area>30000): #30000 DEĞERİ GÖRÜLEN CİSMİN ALANINA BAĞLI / WHİLE İLE SAĞLAMLAŞTIRMAYA DİKKAT
                             hedef_bulundu = True
                             break
-                        
+
                     if(hedef_bulundu):
                         break
+
                 cv2.imshow('frame', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     gorev_algoritmasi = False
                     break
                 move.go()
             x_sure_son = time.time()
+
+
             # HEDEF TESPİT EDİLDİ İSE GÜDÜME GEÇ -> 5
             if(hedef_bulundu==True):
                 if(yon==True):
@@ -162,24 +178,28 @@ while True:
                 x_mesafe.append(mesafe)
                 hedef_bulundu=False 
                 gudum_algoritmasi=True
+                navigasyon_algoritmasi = False
                 for i in x_mesafe:
                     toplam_x_mesafe = toplam_x_mesafe + i
                 break
             
-            # # KISA DUVARI YANINA AL -> 6
+            # X DEKİ MESAFEYİ ALIYOR
             if(yon==True):
                 mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*1
             else:
                 mesafe = (x_sure_son-x_sure_bas)*aracin_hizi*-1
             x_mesafe.append(mesafe)
-            # dondurme(yon,90)
+
+
+            # # KISA DUVARI YANINA AL -> 6
+            # dondur(yon,90)
     
             # # BELİRLİ SÜRE İLERLEME -> 7
             # belirli_sure_git(5)
     
     
             # # KISA DUVARI ARKANA AL -> 8
-            # dondurme(yon,90)
+            # dondur(yon,90)
             # yon = not(yon)
           
         
@@ -195,11 +215,14 @@ while True:
             contours2, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             utils.draw_center(frame)
             cv2.putText(frame,"GUDUM",(460,37),cv2.FONT_HERSHEY_COMPLEX_SMALL,2,(0,255,255),3)
+
+
+
+            
             if contours2:
                 for cnt2 in contours2:
+                    utils.draw_contours(frame,cnt2)
                     area2 = cv2.contourArea(cnt2)
-                    approx2 = cv2.approxPolyDP(cnt2,epsilon,True)
-                    cv2.drawContours(frame,[approx2],0,(252,200,170),2)
                     if(area2>10000):   
                         gorulmedi=False
                         onceki_zaman = time.time()
@@ -226,13 +249,16 @@ while True:
                 simdiki_zaman = time.time()
                 print("GECEN ZAMAN --------->"+str(simdiki_zaman-onceki_zaman))
                 if(simdiki_zaman-onceki_zaman>=4):
-                    onceki_zaman = time.time()
                     gorulmedi=False
+                    navigasyon_algoritmasi = True
+                    gudum_algoritmasi = False
                     break
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 gorev_algoritmasi = False
                 break
+
+
     while dolum_algoritmasi:
         while dolum_yapildi:
             y_sure_bas = time.time()

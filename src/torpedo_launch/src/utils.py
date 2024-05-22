@@ -16,4 +16,10 @@ def get_error_range(h, real_distance):
 def draw_center(frame):
     cv2.circle(frame, (320, 240), 10, (0, 0, 255), 2)
 
+def draw_contours(frame , cnt):
+    area  = cv2.contourArea(cnt)
+    epsilon = 0.02*cv2.arcLength(cnt,True)
+    approx = cv2.approxPolyDP(cnt,epsilon,True)
+    cv2.drawContours(frame,[approx],0,(252,200,170),2)
+    
 
